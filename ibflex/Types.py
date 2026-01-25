@@ -2300,6 +2300,11 @@ class CorporateAction(FlexElement):
     commodityType: Optional[str] = None
     fineness: Optional[decimal.Decimal] = None
     weight: Optional[str] = None
+    figi: Optional[str] = None
+    issuerCountryCode: Optional[str] = None
+    costBasis: Optional[decimal.Decimal] = None
+    
+
 
 
 @dataclass(frozen=True)
