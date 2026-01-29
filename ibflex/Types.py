@@ -479,6 +479,7 @@ class EquitySummaryByReportDateInBase(FlexElement):
     marginFinancingChargeAccrualsShort: Optional[decimal.Decimal] = None
     cryptoLong: Optional[decimal.Decimal] = None
     cryptoShort: Optional[decimal.Decimal] = None
+    liteSurchargeAccruals: Optional[decimal.Decimal] = None
 
 
 @dataclass(frozen=True)
@@ -1146,7 +1147,7 @@ class Trade(FlexElement):
     subCategory: Optional[str] = None
     issuerCountryCode: Optional[str] = None
     rtn: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     positionActionID: Optional[str] = None
 
 
@@ -1299,7 +1300,7 @@ class Lot(FlexElement):
     issuerCountryCode: Optional[str] = None
     relatedTradeID: Optional[str] = None
     rtn: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     positionActionID: Optional[str] = None
 
 
@@ -1457,7 +1458,7 @@ class SymbolSummary(FlexElement):
     ibCommissionCurrency: Optional[str] = None
     ibExecID: Optional[str] = None
     ibOrderID: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     mtmPnl: Optional[decimal.Decimal] = None
     netCash: Optional[decimal.Decimal] = None
     netCashInBase: Optional[decimal.Decimal] = None
@@ -1583,7 +1584,7 @@ class AssetSummary(FlexElement):
     origTransactionID: Optional[str] = None
     relatedTransactionID: Optional[str] = None
     rtn: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     positionActionID: Optional[str] = None
 
 
@@ -1687,7 +1688,7 @@ class Order(FlexElement):
     origTransactionID: Optional[str] = None
     relatedTransactionID: Optional[str] = None
     rtn: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     serialNumber: Optional[str] = None
     deliveryType: Optional[str] = None
     commodityType: Optional[str] = None
@@ -1846,7 +1847,7 @@ class OptionEAE(FlexElement):
     origTransactionID: Optional[str] = None
     relatedTransactionID: Optional[str] = None
     rtn: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     serialNumber: Optional[str] = None
     deliveryType: Optional[str] = None
     commodityType: Optional[str] = None
@@ -2540,7 +2541,7 @@ class SecurityInfo(FlexElement):
     origTransactionID: Optional[str] = None
     relatedTransactionID: Optional[str] = None
     rtn: Optional[str] = None
-    initialInvestment: Optional[decimal.Decimal] = None
+    initialInvestment: Optional[bool] = None
     serialNumber: Optional[str] = None
     deliveryType: Optional[str] = None
     commodityType: Optional[str] = None
