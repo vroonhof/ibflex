@@ -480,6 +480,11 @@ class EquitySummaryByReportDateInBase(FlexElement):
     cryptoLong: Optional[decimal.Decimal] = None
     cryptoShort: Optional[decimal.Decimal] = None
     liteSurchargeAccruals: Optional[decimal.Decimal] = None
+    liteSurchargeAccrualsLong: Optional[decimal.Decimal] = None
+    liteSurchargeAccrualsShort: Optional[decimal.Decimal] = None
+    cgtWithholdingAccruals: Optional[decimal.Decimal] = None
+    cgtWithholdingAccrualsLong: Optional[decimal.Decimal] = None
+    cgtWithholdingAccrualsShort: Optional[decimal.Decimal] = None
 
 
 @dataclass(frozen=True)
