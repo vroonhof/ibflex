@@ -478,6 +478,10 @@ class ConverterFunctionTestCase(unittest.TestCase):
             parser.convert_enum(enums.TransferType, "ACATS"),
             enums.TransferType.ACATS,
         )
+        self.assertEqual(
+            parser.convert_enum(enums.TransferType, "OTC"),
+            enums.TransferType.OTC,
+        )
 
     def testMakeOptional(self):
         """make_optional() wraps converter functions to return None for empty string.
