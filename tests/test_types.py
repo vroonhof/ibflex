@@ -1138,6 +1138,38 @@ class TransferTestCase(unittest.TestCase):
         self.assertEqual(instance.clientReference, None)
 
 
+class TransferOTCTestCase(unittest.TestCase):
+    data = ET.fromstring(
+        ('<Transfer accountId="U1234567" acctAlias="" model="" '
+         'currency="USD" fxRateToBase="1" assetCategory="CRYPTO" subCategory="" '
+         'symbol="BTC.USD-PAXOS" description="Bitcoin cryptocurrency" '
+         'conid="123456789" securityID="" securityIDType="" cusip="" isin="" '
+         'underlyingConid="" underlyingSymbol="" issuer="" multiplier="1" '
+         'strike="" expiry="" putCall="" principalAdjustFactor="" '
+         'reportDate="2025-02-26" date="2025-02-26" dateTime="2025-02-26" '
+         'settleDate="2025-02-26" type="OTC" direction="OUT" company="--" '
+         'account="hash" accountName="" deliveringBroker="OnChain" '
+         'quantity="-0.5" transferPrice="0" positionAmount="-20000" '
+         'positionAmountInBase="-16000" pnlAmount="0" pnlAmountInBase="0" '
+         'fxPnl="0" cashTransfer="0" code="" clientReference="" '
+         'transactionID="12345678" levelOfDetail="TRANSFER" />')
+    )
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Transfer)
+        self.assertEqual(instance.accountId, "U1234567")
+        self.assertEqual(instance.assetCategory, enums.AssetClass.CRYPTOCURRENCY)
+        self.assertEqual(instance.symbol, "BTC.USD-PAXOS")
+        self.assertEqual(instance.description, "Bitcoin cryptocurrency")
+        self.assertEqual(instance.type, enums.TransferType.OTC)
+        self.assertEqual(instance.direction, enums.InOut.OUT)
+        self.assertEqual(instance.quantity, decimal.Decimal("-0.5"))
+        self.assertEqual(instance.positionAmount, decimal.Decimal("-20000"))
+        self.assertEqual(instance.positionAmountInBase, decimal.Decimal("-16000"))
+
+
+
 class TransferLotTestCase(unittest.TestCase):
     data = ET.fromstring(
         ('<TransferLot accountId="U123456" currency="USD" fxRateToBase="1" '
