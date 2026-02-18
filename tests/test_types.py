@@ -757,7 +757,7 @@ class TradeAutoFXTestCase(unittest.TestCase):
         self.assertEqual(instance.assetCategory, enums.AssetClass.CASH)
 
 
-class TradeFIFOTestCase(unittest.TestCase):
+class TradeLiquidationForcedTestCase(unittest.TestCase):
     data = ET.fromstring(
         ('<Trade currency="USD" symbol="AAPL" description="APPLE INC" '
          'dateTime="2025-01-15;143045" tradeDate="2025-01-15" quantity="10.0" '
@@ -779,7 +779,7 @@ class TradeFIFOTestCase(unittest.TestCase):
         self.assertEqual(instance.quantity, decimal.Decimal("10.0"))
         self.assertEqual(instance.tradePrice, decimal.Decimal("150.0"))
         self.assertEqual(instance.proceeds, decimal.Decimal("1500.0"))
-        self.assertEqual(instance.notes, (enums.Code.FIFO, ))
+        self.assertEqual(instance.notes, (enums.Code.LIQUIDATION_FORCED, ))
         self.assertEqual(instance.buySell, enums.BuySell.SELL)
         self.assertEqual(instance.levelOfDetail, "EXECUTION")
         self.assertEqual(instance.assetCategory, enums.AssetClass.STOCK)
