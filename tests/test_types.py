@@ -758,6 +758,7 @@ class TradeAutoFXTestCase(unittest.TestCase):
 
 
 class TradeLiquidationForcedTestCase(unittest.TestCase):
+    """Test parsing of Trade with LF (Forced Liquidation) notes code."""
     data = ET.fromstring(
         ('<Trade currency="USD" symbol="AAPL" description="APPLE INC" '
          'dateTime="2025-01-15;143045" tradeDate="2025-01-15" quantity="10.0" '
