@@ -757,6 +757,34 @@ class TradeAutoFXTestCase(unittest.TestCase):
         self.assertEqual(instance.assetCategory, enums.AssetClass.CASH)
 
 
+class TradeFIFOTestCase(unittest.TestCase):
+    data = ET.fromstring(
+        ('<Trade currency="USD" symbol="AAPL" description="APPLE INC" '
+         'dateTime="2025-01-15;143045" tradeDate="2025-01-15" quantity="10.0" '
+         'tradePrice="150.0" proceeds="1500.0" ibCommission="1.0" ibCommissionCurrency="USD" '
+         'notes="LF" cost="1400.0" buySell="SELL" ibOrderID="9876543210" openDateTime="" '
+         'levelOfDetail="EXECUTION" fxRateToBase="1" assetCategory="STK" taxes="0" '
+         'closePrice="150.0" fifoPnlRealized="100.0" origTradePrice="140.0" origTradeDate="" '
+         'cusip="" isin="" />')
+    )
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Trade)
+        self.assertEqual(instance.currency, "USD")
+        self.assertEqual(instance.symbol, "AAPL")
+        self.assertEqual(instance.description, "APPLE INC")
+        self.assertEqual(instance.dateTime, datetime.datetime(2025, 1, 15, 14, 30, 45))
+        self.assertEqual(instance.tradeDate, datetime.date(2025, 1, 15))
+        self.assertEqual(instance.quantity, decimal.Decimal("10.0"))
+        self.assertEqual(instance.tradePrice, decimal.Decimal("150.0"))
+        self.assertEqual(instance.proceeds, decimal.Decimal("1500.0"))
+        self.assertEqual(instance.notes, (enums.Code.FIFO, ))
+        self.assertEqual(instance.buySell, enums.BuySell.SELL)
+        self.assertEqual(instance.levelOfDetail, "EXECUTION")
+        self.assertEqual(instance.assetCategory, enums.AssetClass.STOCK)
+
+
 class OptionEAETestCase(unittest.TestCase):
     data = ET.fromstring(
         ('<OptionEAE accountId="U123456" acctAlias="ibflex test" model="" '

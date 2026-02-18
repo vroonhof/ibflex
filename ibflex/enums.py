@@ -77,6 +77,7 @@ class Code(str, enum.Enum):
     INVESTOR = "INV"  # Investment Transfer from Investor
     MARGINLOW = "L"  # Ordered by IB (Margin Violation)
     WASHSALE = "LD"  # Adjusted by Loss Disallowed from Wash Sale
+    FIFO = "LF"  # First In, First Out (FIFO) tax lot-matching method
     LIFO = "LI"  # Last In, First Out (LIFO) tax lot-matching method
     LTCG = "LT"  # Long-term P/L
     LOAN = "Lo"  # Direct Loan
