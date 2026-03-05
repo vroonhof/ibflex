@@ -90,6 +90,7 @@ __all__ = [
     "SymbolSummary",
     "AssetSummary",
     "Order",
+    "StockGrantActivity",
 ]
 
 import datetime
@@ -187,7 +188,7 @@ class FlexStatement(FlexElement):
     ConversionRates: Tuple["ConversionRate", ...] = ()
     HKIPOOpenSubscriptions: Tuple = ()  # TODO
     CommissionCredits: Tuple = ()  # TODO
-    StockGrantActivities: Tuple = ()  # TODO
+    StockGrantActivities: Tuple["StockGrantActivity", ...] = ()
     SLBCollaterals: Tuple = ()  # TODO
     IncentiveCouponAccrualDetails: Tuple = ()  # TODO
     DepositsOnHold: Tuple = ()  # TODO
@@ -2873,6 +2874,50 @@ class SLBOpenContract(FlexElement):
     commodityType: Optional[str] = None
     fineness: Optional[decimal.Decimal] = None
     weight: Optional[decimal.Decimal] = None
+
+
+@dataclass(frozen=True)
+class StockGrantActivity(FlexElement):
+    accountId: Optional[str] = None
+    acctAlias: Optional[str] = None
+    model: Optional[str] = None
+    currency: Optional[str] = None
+    fxRateToBase: Optional[decimal.Decimal] = None
+    assetCategory: Optional[enums.AssetClass] = None
+    subCategory: Optional[str] = None
+    symbol: Optional[str] = None
+    description: Optional[str] = None
+    conid: Optional[str] = None
+    securityID: Optional[str] = None
+    securityIDType: Optional[str] = None
+    cusip: Optional[str] = None
+    isin: Optional[str] = None
+    figi: Optional[str] = None
+    listingExchange: Optional[str] = None
+    underlyingConid: Optional[str] = None
+    underlyingSymbol: Optional[str] = None
+    underlyingSecurityID: Optional[str] = None
+    underlyingListingExchange: Optional[str] = None
+    issuer: Optional[str] = None
+    issuerCountryCode: Optional[str] = None
+    multiplier: Optional[decimal.Decimal] = None
+    strike: Optional[decimal.Decimal] = None
+    expiry: Optional[datetime.date] = None
+    putCall: Optional[enums.PutCall] = None
+    principalAdjustFactor: Optional[decimal.Decimal] = None
+    reportDate: Optional[datetime.date] = None
+    activityDescription: Optional[str] = None
+    awardDate: Optional[datetime.date] = None
+    vestingDate: Optional[datetime.date] = None
+    quantity: Optional[decimal.Decimal] = None
+    price: Optional[decimal.Decimal] = None
+    value: Optional[decimal.Decimal] = None
+    serialNumber: Optional[str] = None
+    deliveryType: Optional[str] = None
+    commodityType: Optional[str] = None
+    fineness: Optional[decimal.Decimal] = None
+    weight: Optional[decimal.Decimal] = None
+
 
 #  Type alias to work around https://github.com/python/mypy/issues/1775
 _ClientFeesDetail = ClientFeesDetail
