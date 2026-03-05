@@ -171,6 +171,7 @@ class OrderType(str, enum.Enum):
     TRAIL = "TRAIL"
     REL = "REL"
     MIT = "MIT"
+    LIT = "LIT"
 
 @enum.unique
 class Reorg(str, enum.Enum):

@@ -1993,6 +1993,31 @@ class TradesOrderTestCase(unittest.TestCase):
         self.assertEqual(instance.isAPIOrder, None)
         self.assertEqual(instance.accruedInt, decimal.Decimal("0"))
 
+
+class TradesOrderLITTestCase(unittest.TestCase):
+    """Test that LIT (Limit if Touched) order type is parsed correctly."""
+
+    data = ET.fromstring(
+    ('<Order buySell="BUY" quantity="10" netCash="-500.0" dateTime="2025-01-15 09:30:00" tradePrice="50.0" '
+    'acctAlias="myaccount" assetCategory="STK" description="AAPL" conid="265598" '
+    'underlyingConid="" underlyingSymbol="" multiplier="1" strike="" expiry="" '
+    'putCall="" ibCommission="-1.0" ibOrderID="123456789" accountId="myaccount" model="" '
+    'currency="USD" fxRateToBase="1" symbol="AAPL" securityID="" securityIDType="" cusip="" '
+    'isin="" listingExchange="NASDAQ" underlyingSecurityID="" underlyingListingExchange="" issuer="" '
+    'tradeID="" reportDate="2025-01-15" principalAdjustFactor="" tradeDate="2025-01-15" settleDateTarget="2025-01-17" '
+    'transactionType="" exchange="" tradeMoney="500" proceeds="-500" taxes="0" ibCommissionCurrency="USD" closePrice="50.5" '
+    'openCloseIndicator="-" notes="" cost="501.0" fifoPnlRealized="0" fxPnl="0" mtmPnl="5" origTradePrice="" '
+    'origTradeDate="" origTradeID="" origOrderID="" clearingFirmID="" transactionID="" ibExecID="" brokerageOrderID="" '
+    'orderReference="" volatilityOrderLink="" exchOrderId="" extExecID="" orderTime="2025-01-15 09:30:00" openDateTime="" '
+    'holdingPeriodDateTime="" whenRealized="" whenReopened="" levelOfDetail="ORDER" changeInPrice="" changeInQuantity="" '
+    'orderType="LIT" traderID="" isAPIOrder="" accruedInt="0" />'))
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Order)
+        self.assertEqual(instance.orderType, enums.OrderType.LIT)
+
+
 class OptionEAEBuyTestCase(unittest.TestCase):
     data = ET.fromstring(
         ('<OptionEAE accountId="U123456" acctAlias="ibflex testing" model="" '
