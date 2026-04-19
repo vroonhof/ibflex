@@ -2374,6 +2374,7 @@ class CashTransaction(FlexElement):
     issuerCountryCode: Optional[str] = None
     availableForTradingDate: Optional[datetime.datetime] = None
     exDate: Optional[datetime.datetime] = None
+    dividendType: Optional[str] = None
 
 @dataclass(frozen=True)
 class DebitCardActivity(FlexElement):
