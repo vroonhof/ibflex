@@ -1,0 +1,9 @@
+<FlexQueryResponse queryName="crypto_transfer" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U1234567" fromDate="2025-02-01" toDate="2025-02-28" period="LastMonth" whenGenerated="2025-03-01;120000">
+<Transfers>
+<Transfer accountId="U1234567" acctAlias="" model="" currency="USD" fxRateToBase="1" assetCategory="CRYPTO" subCategory="" symbol="BTC.USD-PAXOS" description="Bitcoin cryptocurrency" conid="123456789" securityID="" securityIDType="" cusip="" isin="" listingExchange="" underlyingSecurityID="" underlyingListingExchange="" issuer="" underlyingConid="" underlyingSymbol="" multiplier="1" strike="" expiry="" putCall="" principalAdjustFactor="" reportDate="2025-02-26" date="2025-02-26" dateTime="2025-02-26" settleDate="2025-02-26" account="hash" deliveringBroker="OnChain" type="OTC" direction="OUT" company="--" accountName="" quantity="-0.5" transferPrice="0" positionAmount="-20000" positionAmountInBase="-16000" pnlAmount="0" pnlAmountInBase="0" fxPnl="0" cashTransfer="0" code="" clientReference="" transactionID="12345678" levelOfDetail="TRANSFER" />
+</Transfers>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

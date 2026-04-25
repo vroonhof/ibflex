@@ -5,10 +5,12 @@ https://www.interactivebrokers.com/en/software/am/am/reports/flex_web_service_ve
 """
 # stdlib imports
 import time
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional, Union
+
+# 3rd party imports
+import defusedxml.ElementTree as ET
 
 if TYPE_CHECKING:
     import requests

@@ -27,12 +27,26 @@ jobs:
       - run: pip install -e .[web,dev]
       - run: mypy ibflex tests
 
-  pytest:
-    name: Tests (pytest, py${{ matrix.python-version }})
+  pip-audit:
+    name: Dependency vulnerability scan
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Non-editable install so pip-audit can introspect the wheel cleanly.
+      - run: pip install .[web] pip-audit
+      # CVE-2026-3219 is in the runner's bundled pip itself, not ibflex2.
+      - run: pip-audit --strict --ignore-vuln CVE-2026-3219
+
+  pytest:
+    name: Tests (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -40,4 +54,4 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e .[web,dev]
-      - run: pytest --cov=ibflex --cov-report=term --cov-fail-under=85 tests/
+      - run: pytest --cov=ibflex --cov-report=term --cov-fail-under=95 tests/

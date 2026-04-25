@@ -1,0 +1,56 @@
+name: Parser error on a real Flex report
+description: ibflex2 raised FlexParserError or AttributeError parsing your report.
+labels: [parser-error, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. To fix this we need:
+        1. A reproducer — the smallest XML snippet that triggers the error.
+        2. The full traceback.
+        3. Anonymize per [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md):
+           account IDs, names, addresses, IDs.
+
+  - type: input
+    id: version
+    attributes:
+      label: ibflex2 version
+      placeholder: e.g. 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: e.g. 3.12.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Full traceback
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: xml
+    attributes:
+      label: Anonymized XML snippet that reproduces the error
+      description: A complete, parseable XML fragment. Wrap in <FlexQueryResponse> if needed.
+      render: xml
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tolerance
+    attributes:
+      label: Did you try `enable_unknown_attribute_tolerance()`?
+      options:
+        - "Yes, and it parses correctly"
+        - "Yes, but it still fails"
+        - "No, haven't tried"
+    validations:
+      required: true

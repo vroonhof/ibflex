@@ -2,7 +2,7 @@ test:
 	coverage erase
 	mypy ibflex tests
 	ruff check ibflex tests
-	pytest --cov=ibflex --cov-report=term --cov-fail-under=85 tests/
+	pytest --cov=ibflex --cov-report=term --cov-fail-under=95 tests/
 
 lint:
 	ruff check ibflex tests

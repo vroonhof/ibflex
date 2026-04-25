@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 from typing import Optional, Tuple
 from unittest.mock import patch, sentinel
 
-from ibflex import enums, parser
+from ibflex import Types, enums, parser
 
 
 @patch("ibflex.parser.parse_element_container")
@@ -332,9 +332,11 @@ class ConverterFunctionTestCase(unittest.TestCase):
             parser.convert_int("")
 
     def testConvertBool(self):
-        """ Legal boolean values are 'Y'/'N' """
+        """ Legal boolean values are 'Y'/'N' or 'Yes'/'No' """
         self.assertEqual(parser.convert_bool("Y"), True)
         self.assertEqual(parser.convert_bool("N"), False)
+        self.assertEqual(parser.convert_bool("Yes"), True)
+        self.assertEqual(parser.convert_bool("No"), False)
 
         #  Empty string raises FlexParserError.
         with self.assertRaises(parser.FlexParserError):
@@ -372,6 +374,10 @@ class ConverterFunctionTestCase(unittest.TestCase):
         #  Empty string raises FlexParserError.
         with self.assertRaises(parser.FlexParserError):
             parser.convert_date("")
+
+        #  IBKR sends "MULTI" for summary rows that span multiple dates.
+        self.assertIsNone(parser.prep_date("MULTI"))
+        self.assertIsNone(parser.prep_datetime("MULTI"))
 
     def testConvertTime(self):
         """Legal time formats: HHmmss, HH:mm:ss"""
@@ -475,6 +481,10 @@ class ConverterFunctionTestCase(unittest.TestCase):
             parser.convert_enum(enums.TransferType, "ACATS"),
             enums.TransferType.ACATS,
         )
+        self.assertEqual(
+            parser.convert_enum(enums.TransferType, "OTC"),
+            enums.TransferType.OTC,
+        )
 
     def testMakeOptional(self):
         """make_optional() wraps converter functions to return None for empty string.
@@ -533,6 +543,333 @@ class ConverterFunctionTestCase(unittest.TestCase):
         self.assertEqual(
             opt(parser.convert_datetime)(""), None
         )
+
+
+class UnknownAttributeToleranceTestCase(unittest.TestCase):
+    """Tests for the unknown attribute tolerance feature.
+
+    This feature allows the parser to silently ignore unknown XML attributes
+    and element types, which is useful when Interactive Brokers adds new fields
+    to their exports.
+    """
+
+    def setUp(self):
+        """Ensure tolerance is off before each test."""
+        parser.disable_unknown_attribute_tolerance()
+
+    def tearDown(self):
+        """Ensure tolerance is off after each test."""
+        parser.disable_unknown_attribute_tolerance()
+
+    def test_tolerance_default_off(self):
+        """Tolerance is off by default."""
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+
+    def test_enable_disable(self):
+        """enable/disable functions toggle the flag correctly."""
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        parser.enable_unknown_attribute_tolerance()
+        self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        parser.disable_unknown_attribute_tolerance()
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+
+    def test_tolerance_functions_accessible_from_package(self):
+        """The tolerance functions are accessible from the top-level ibflex package.
+
+        On the original upstream ibflex package these functions do not exist,
+        so calling ibflex.enable_unknown_attribute_tolerance() would raise
+        AttributeError, providing a clear version guard.
+        """
+        import ibflex
+        self.assertTrue(hasattr(ibflex, 'enable_unknown_attribute_tolerance'))
+        self.assertTrue(hasattr(ibflex, 'disable_unknown_attribute_tolerance'))
+        # Verify they are callable
+        self.assertTrue(callable(ibflex.enable_unknown_attribute_tolerance))
+        self.assertTrue(callable(ibflex.disable_unknown_attribute_tolerance))
+
+    def test_unknown_attr_raises_without_tolerance(self):
+        """Without tolerance, unknown XML attributes raise FlexParserError."""
+        # AccountInformation with an unknown attribute "newIBField"
+        elem = ET.fromstring(
+            '<AccountInformation accountId="U123456" currency="USD" '
+            'newIBField="some_value" />'
+        )
+        with self.assertRaises(parser.FlexParserError):
+            parser.parse_data_element(elem)
+
+    def test_unknown_attr_ignored_with_tolerance(self):
+        """With tolerance enabled, unknown XML attributes are silently ignored."""
+        parser.enable_unknown_attribute_tolerance()
+
+        elem = ET.fromstring(
+            '<AccountInformation accountId="U123456" currency="USD" '
+            'newIBField="some_value" anotherNewField="42" />'
+        )
+        instance = parser.parse_data_element(elem)
+        self.assertIsInstance(instance, Types.AccountInformation)
+        self.assertEqual(instance.accountId, "U123456")
+        self.assertEqual(instance.currency, "USD")
+        # Unknown attributes are not present on the parsed object
+        self.assertFalse(hasattr(instance, 'newIBField'))
+        self.assertFalse(hasattr(instance, 'anotherNewField'))
+
+    def test_known_attrs_still_parsed_with_tolerance(self):
+        """With tolerance, known attributes are still correctly parsed."""
+        parser.enable_unknown_attribute_tolerance()
+
+        elem = ET.fromstring(
+            '<AccountInformation accountId="U123456" acctAlias="test" '
+            'currency="USD" name="Test User" dateOpened="2020-01-15" '
+            'unknownField="ignored" />'
+        )
+        instance = parser.parse_data_element(elem)
+        self.assertIsInstance(instance, Types.AccountInformation)
+        self.assertEqual(instance.accountId, "U123456")
+        self.assertEqual(instance.acctAlias, "test")
+        self.assertEqual(instance.currency, "USD")
+        self.assertEqual(instance.name, "Test User")
+        self.assertEqual(instance.dateOpened, datetime.date(2020, 1, 15))
+
+    def test_disable_restores_strict_behavior(self):
+        """After disabling tolerance, unknown attributes raise errors again."""
+        parser.enable_unknown_attribute_tolerance()
+
+        elem = ET.fromstring(
+            '<AccountInformation accountId="U123456" currency="USD" '
+            'newIBField="some_value" />'
+        )
+        # Should succeed with tolerance on
+        instance = parser.parse_data_element(elem)
+        self.assertIsInstance(instance, Types.AccountInformation)
+
+        parser.disable_unknown_attribute_tolerance()
+
+        # Should fail with tolerance off
+        with self.assertRaises(parser.FlexParserError):
+            parser.parse_data_element(elem)
+
+    def test_unknown_element_type_raises_without_tolerance(self):
+        """Without tolerance, unknown XML element types raise AttributeError."""
+        elem = ET.fromstring('<BrandNewReportType foo="bar" />')
+        with self.assertRaises(AttributeError):
+            parser.parse_data_element(elem)
+
+    def test_unknown_element_type_returns_none_with_tolerance(self):
+        """With tolerance, unknown element types return None."""
+        parser.enable_unknown_attribute_tolerance()
+
+        elem = ET.fromstring('<BrandNewReportType foo="bar" />')
+        result = parser.parse_data_element(elem)
+        self.assertIsNone(result)
+
+    def test_unknown_elements_filtered_in_container(self):
+        """With tolerance, unknown element types are filtered out of containers."""
+        parser.enable_unknown_attribute_tolerance()
+
+        container = ET.Element("Trades")
+        # Add a known Trade element
+        ET.SubElement(container, "Trade", attrib={
+            "accountId": "U123456",
+            "currency": "USD",
+            "fxRateToBase": "1",
+            "assetCategory": "STK",
+            "symbol": "AAPL",
+            "description": "APPLE INC",
+            "conid": "265598",
+            "tradeID": "123",
+            "reportDate": "2020-01-15",
+            "tradeDate": "2020-01-15",
+            "quantity": "100",
+            "tradePrice": "150.00",
+            "tradeMoney": "15000.00",
+            "proceeds": "-15000.00",
+            "taxes": "0",
+            "ibCommission": "-1.00",
+            "ibCommissionCurrency": "USD",
+            "netCash": "-15001.00",
+            "buySell": "BUY",
+        })
+        # Add an unknown element type
+        ET.SubElement(container, "BrandNewTradeType", attrib={
+            "unknownField": "value"
+        })
+
+        result = parser.parse_element_container(container)
+        # Only the known Trade should be in the result
+        self.assertEqual(len(result), 1)
+        self.assertIsInstance(result[0], Types.Trade)
+
+    def test_full_parse_with_unknown_attrs(self):
+        """Full round-trip: parse a FlexQueryResponse with unknown attributes."""
+        parser.enable_unknown_attribute_tolerance()
+
+        xml_data = (
+            '<FlexQueryResponse queryName="test" type="AF">'
+            '<FlexStatements count="1">'
+            '<FlexStatement accountId="U123456" fromDate="2020-01-01" '
+            'toDate="2020-12-31" period="Annual" '
+            'whenGenerated="2021-01-01;120000" '
+            'brandNewStatementAttr="surprise" />'
+            '</FlexStatements>'
+            '</FlexQueryResponse>'
+        )
+        response = parser.parse(xml_data.encode())
+        self.assertIsInstance(response, Types.FlexQueryResponse)
+        self.assertEqual(response.queryName, "test")
+        self.assertEqual(len(response.FlexStatements), 1)
+        stmt = response.FlexStatements[0]
+        self.assertEqual(stmt.accountId, "U123456")
+
+    def test_full_parse_unknown_attrs_fails_without_tolerance(self):
+        """Without tolerance, unknown attributes in full parse raise errors."""
+        xml_data = (
+            '<FlexQueryResponse queryName="test" type="AF">'
+            '<FlexStatements count="1">'
+            '<FlexStatement accountId="U123456" fromDate="2020-01-01" '
+            'toDate="2020-12-31" period="Annual" '
+            'whenGenerated="2021-01-01;120000" '
+            'brandNewStatementAttr="surprise" />'
+            '</FlexStatements>'
+            '</FlexQueryResponse>'
+        )
+        with self.assertRaises(parser.FlexParserError):
+            parser.parse(xml_data.encode())
+
+    def test_unknown_contained_element_in_statement(self):
+        """With tolerance, unknown contained elements in FlexStatement are ignored."""
+        parser.enable_unknown_attribute_tolerance()
+
+        xml_data = (
+            '<FlexQueryResponse queryName="test" type="AF">'
+            '<FlexStatements count="1">'
+            '<FlexStatement accountId="U123456" fromDate="2020-01-01" '
+            'toDate="2020-12-31" period="Annual" '
+            'whenGenerated="2021-01-01;120000">'
+            '<BrandNewSection>'
+            '<BrandNewItem foo="bar" />'
+            '</BrandNewSection>'
+            '</FlexStatement>'
+            '</FlexStatements>'
+            '</FlexQueryResponse>'
+        )
+        response = parser.parse(xml_data.encode())
+        self.assertIsInstance(response, Types.FlexQueryResponse)
+        self.assertEqual(len(response.FlexStatements), 1)
+        self.assertEqual(response.FlexStatements[0].accountId, "U123456")
+
+    def test_context_manager_enables_and_restores(self):
+        """`with unknown_attribute_tolerance()` flips the flag and restores it."""
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        with parser.unknown_attribute_tolerance():
+            self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+
+    def test_context_manager_restores_on_exception(self):
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        with self.assertRaises(RuntimeError):
+            with parser.unknown_attribute_tolerance():
+                self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+                raise RuntimeError("boom")
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+
+    def test_context_manager_disable_restores_previous(self):
+        """Nesting with enabled=False inside an enabled scope restores the outer."""
+        parser.enable_unknown_attribute_tolerance()
+        try:
+            with parser.unknown_attribute_tolerance(enabled=False):
+                self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+            self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        finally:
+            parser.disable_unknown_attribute_tolerance()
+
+    def test_multiple_unknown_attrs_on_trade(self):
+        """Unknown attributes on Trade elements are ignored with tolerance."""
+        parser.enable_unknown_attribute_tolerance()
+
+        elem = ET.fromstring(
+            '<Trade accountId="U123456" currency="USD" fxRateToBase="1" '
+            'assetCategory="STK" symbol="AAPL" description="APPLE INC" '
+            'conid="265598" tradeID="123" reportDate="2020-01-15" '
+            'tradeDate="2020-01-15" quantity="100" tradePrice="150.00" '
+            'tradeMoney="15000.00" proceeds="-15000.00" taxes="0" '
+            'ibCommission="-1.00" ibCommissionCurrency="USD" '
+            'netCash="-15001.00" buySell="BUY" '
+            'newField1="value1" newField2="value2" newField3="value3" />'
+        )
+        instance = parser.parse_data_element(elem)
+        self.assertIsInstance(instance, Types.Trade)
+        self.assertEqual(instance.symbol, "AAPL")
+        self.assertEqual(instance.tradeID, "123")
+        self.assertFalse(hasattr(instance, 'newField1'))
+
+
+class ParserErrorBranchesTestCase(unittest.TestCase):
+    """Coverage for the parser's various FlexParserError raise paths."""
+
+    def test_wrong_root_tag_raises(self):
+        """parse() rejects XML whose root isn't <FlexQueryResponse>."""
+        with self.assertRaises(parser.FlexParserError) as cm:
+            parser.parse(b'<NotAFlexQueryResponse />')
+        self.assertIn("Not a FlexQueryResponse", str(cm.exception))
+
+    def test_dataclass_construction_failure_raises(self):
+        """If a dataclass __init__ blows up, parse_data_element wraps it."""
+        # FlexQueryResponse requires queryName and type — omit both.
+        elem = ET.fromstring('<FlexQueryResponse />')
+        # parse_element returns the container path because attrib is empty;
+        # bypass to parse_data_element directly to hit the error wrapping.
+        elem = ET.fromstring('<FlexQueryResponse queryName="ok" />')
+        with self.assertRaises(parser.FlexParserError) as cm:
+            parser.parse_data_element(elem)
+        self.assertIn("FlexQueryResponse - ", str(cm.exception))
+
+    def test_unknown_converter_type_raises(self):
+        """parse_element_attr raises when the annotation has no converter."""
+        # Temporarily inject an annotation pointing at an un-registered type
+        # string. Restore in a finally block so the rest of the suite is clean.
+        original = Types.AccountInformation.__annotations__.get("accountId")
+        try:
+            Types.AccountInformation.__annotations__["accountId"] = (
+                "UnregisteredType"
+            )
+            with self.assertRaises(parser.FlexParserError) as cm:
+                parser.parse_element_attr(
+                    Types.AccountInformation, "accountId", "x"
+                )
+            self.assertIn("Don't know how to convert", str(cm.exception))
+        finally:
+            Types.AccountInformation.__annotations__["accountId"] = original
+
+
+class NullPrepResultTestCase(unittest.TestCase):
+    """make_converter preserves None when prep returns None."""
+
+    def test_convert_date_multi_returns_none(self):
+        """convert_date('MULTI') exercises the make_converter null branch."""
+        self.assertIsNone(parser.convert_date("MULTI"))
+
+    def test_convert_datetime_multi_returns_none(self):
+        self.assertIsNone(parser.convert_datetime("MULTI"))
+
+
+class CliMainTestCase(unittest.TestCase):
+    """The parser CLI entrypoint reads files and prints success."""
+
+    def test_main_prints_success(self):
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False) as f:
+            f.write(
+                '<FlexQueryResponse queryName="t" type="AF">'
+                '<FlexStatements count="0" /></FlexQueryResponse>'
+            )
+            f.flush()
+            path = f.name
+
+        with patch("sys.argv", ["parser", path]), patch("builtins.print") as mp:
+            parser.main()
+        mp.assert_called_once()
+        self.assertIn("Successfully parsed", mp.call_args.args[0])
 
 
 if __name__ == '__main__':
