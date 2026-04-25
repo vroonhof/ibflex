@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: IBKR Activity Flex Query Reference
+    url: https://www.interactivebrokers.com/en/software/reportguide/reportguide.htm
+    about: Authoritative source for what IBKR's Flex XML looks like.

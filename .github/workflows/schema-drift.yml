@@ -1,0 +1,61 @@
+name: Schema drift
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'  # Mondays at noon UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - id: drift
+        run: |
+          python scripts/check_schema_drift.py > drift.txt
+          echo "exit=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      - name: Upload drift report
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: drift.txt
+      - name: Open or update tracking issue
+        if: steps.drift.outputs.exit != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('drift.txt', 'utf8');
+            const title = 'Schema drift detected against IBKR reference';
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'schema-drift',
+            });
+            const existing = issues.data.find(i => i.title === title);
+            const fenced = '```\n' + body + '\n```';
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Drift report (${new Date().toISOString().slice(0, 10)}):\n\n${fenced}`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: `Drift report (${new Date().toISOString().slice(0, 10)}):\n\n${fenced}`,
+                labels: ['schema-drift'],
+              });
+            }

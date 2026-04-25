@@ -76,6 +76,7 @@ class Code(str, enum.Enum):
     INVESTOR = "INV"  # Investment Transfer from Investor
     MARGINLOW = "L"  # Ordered by IB (Margin Violation)
     WASHSALE = "LD"  # Adjusted by Loss Disallowed from Wash Sale
+    LIQUIDATION_FORCED = "LF"  # Forced Liquidation
     LIFO = "LI"  # Last In, First Out (LIFO) tax lot-matching method
     LTCG = "LT"  # Long-term P/L
     LOAN = "Lo"  # Direct Loan
@@ -104,6 +105,7 @@ class Code(str, enum.Enum):
     STCG = "ST"  # Short-term P/L
     STOCKYIELD = "SY"  # Positions that may be eligible for Stock Yield.
     TRANSFER = "T"  # Transfer
+    ADR = "ADR"  # American Depositary Receipt (ADR) creation or cancellation
 
 
 @enum.unique
@@ -169,6 +171,7 @@ class OrderType(str, enum.Enum):
     TRAIL = "TRAIL"
     REL = "REL"
     MIT = "MIT"
+    LIT = "LIT"
 
 @enum.unique
 class Reorg(str, enum.Enum):
@@ -235,6 +238,7 @@ class TransferType(str, enum.Enum):
     ACATS = "ACATS"
     ATON = "ATON"
     FOP = "FOP"
+    OTC = "OTC"
 
 
 @enum.unique

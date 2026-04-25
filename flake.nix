@@ -14,11 +14,13 @@
         mkDevShell = python:
           let
             pyEnv = python.withPackages (ps: with ps; [
+              defusedxml
               requests
               pytest
               pytest-cov
               coverage
               mypy
+              hypothesis
               types-requests
               build
               setuptools
@@ -55,12 +57,14 @@
           ];
 
           dependencies = with pkgs.python312Packages; [
+            defusedxml
             requests
           ];
 
           nativeCheckInputs = with pkgs.python312Packages; [
             pytest
             pytest-cov
+            hypothesis
           ];
 
           checkPhase = ''

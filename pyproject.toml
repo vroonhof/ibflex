@@ -38,6 +38,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 
+dependencies = [
+    "defusedxml>=0.7",
+]
+
 [project.urls]
 Homepage = "https://github.com/robcohen/ibflex2"
 Upstream = "https://github.com/csingley/ibflex"
@@ -50,7 +54,9 @@ dev = [
     "coverage",
     "mypy",
     "ruff",
+    "hypothesis",
     "types-requests",
+    "types-defusedxml",
     "build",
     "requests",
 ]
@@ -70,10 +76,17 @@ version = { attr = "ibflex.__version__.__version__" }
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+filterwarnings = [
+    "error::DeprecationWarning",
+    "error::PendingDeprecationWarning",
+]
 
 [tool.coverage.run]
 source = ["ibflex"]
 branch = true
+omit = [
+    "ibflex/schema_version.py",  # pure constants
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -87,11 +100,19 @@ exclude_lines = [
 python_version = "3.12"
 warn_unused_ignores = true
 warn_redundant_casts = true
+warn_unreachable = true
+warn_no_return = true
 no_implicit_optional = true
+strict_equality = true
+extra_checks = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "defusedxml.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88

@@ -755,6 +755,35 @@ class TradeAutoFXTestCase(unittest.TestCase):
         self.assertEqual(instance.assetCategory, enums.AssetClass.CASH)
 
 
+class TradeLiquidationForcedTestCase(unittest.TestCase):
+    """Test parsing of Trade with LF (Forced Liquidation) notes code."""
+    data = ET.fromstring(
+        '<Trade currency="USD" symbol="AAPL" description="APPLE INC" '
+         'dateTime="2025-01-15;143045" tradeDate="2025-01-15" quantity="10.0" '
+         'tradePrice="150.0" proceeds="1500.0" ibCommission="1.0" ibCommissionCurrency="USD" '
+         'notes="LF" cost="1400.0" buySell="SELL" ibOrderID="9876543210" openDateTime="" '
+         'levelOfDetail="EXECUTION" fxRateToBase="1" assetCategory="STK" taxes="0" '
+         'closePrice="150.0" fifoPnlRealized="100.0" origTradePrice="140.0" origTradeDate="" '
+         'cusip="" isin="" />'
+    )
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Trade)
+        self.assertEqual(instance.currency, "USD")
+        self.assertEqual(instance.symbol, "AAPL")
+        self.assertEqual(instance.description, "APPLE INC")
+        self.assertEqual(instance.dateTime, datetime.datetime(2025, 1, 15, 14, 30, 45))
+        self.assertEqual(instance.tradeDate, datetime.date(2025, 1, 15))
+        self.assertEqual(instance.quantity, decimal.Decimal("10.0"))
+        self.assertEqual(instance.tradePrice, decimal.Decimal("150.0"))
+        self.assertEqual(instance.proceeds, decimal.Decimal("1500.0"))
+        self.assertEqual(instance.notes, (enums.Code.LIQUIDATION_FORCED, ))
+        self.assertEqual(instance.buySell, enums.BuySell.SELL)
+        self.assertEqual(instance.levelOfDetail, "EXECUTION")
+        self.assertEqual(instance.assetCategory, enums.AssetClass.STOCK)
+
+
 class OptionEAETestCase(unittest.TestCase):
     data = ET.fromstring(
         '<OptionEAE accountId="U123456" acctAlias="ibflex test" model="" '
@@ -1134,6 +1163,37 @@ class TransferTestCase(unittest.TestCase):
         self.assertEqual(instance.cashTransfer, decimal.Decimal("0"))
         self.assertEqual(instance.code, ())
         self.assertEqual(instance.clientReference, None)
+
+
+class TransferOTCTestCase(unittest.TestCase):
+    data = ET.fromstring(
+        '<Transfer accountId="U1234567" acctAlias="" model="" '
+         'currency="USD" fxRateToBase="1" assetCategory="CRYPTO" subCategory="" '
+         'symbol="BTC.USD-PAXOS" description="Bitcoin cryptocurrency" '
+         'conid="123456789" securityID="" securityIDType="" cusip="" isin="" '
+         'underlyingConid="" underlyingSymbol="" issuer="" multiplier="1" '
+         'strike="" expiry="" putCall="" principalAdjustFactor="" '
+         'reportDate="2025-02-26" date="2025-02-26" dateTime="2025-02-26" '
+         'settleDate="2025-02-26" type="OTC" direction="OUT" company="--" '
+         'account="hash" accountName="" deliveringBroker="OnChain" '
+         'quantity="-0.5" transferPrice="0" positionAmount="-20000" '
+         'positionAmountInBase="-16000" pnlAmount="0" pnlAmountInBase="0" '
+         'fxPnl="0" cashTransfer="0" code="" clientReference="" '
+         'transactionID="12345678" levelOfDetail="TRANSFER" />'
+    )
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Transfer)
+        self.assertEqual(instance.accountId, "U1234567")
+        self.assertEqual(instance.assetCategory, enums.AssetClass.CRYPTOCURRENCY)
+        self.assertEqual(instance.symbol, "BTC.USD-PAXOS")
+        self.assertEqual(instance.description, "Bitcoin cryptocurrency")
+        self.assertEqual(instance.type, enums.TransferType.OTC)
+        self.assertEqual(instance.direction, enums.InOut.OUT)
+        self.assertEqual(instance.quantity, decimal.Decimal("-0.5"))
+        self.assertEqual(instance.positionAmount, decimal.Decimal("-20000"))
+        self.assertEqual(instance.positionAmountInBase, decimal.Decimal("-16000"))
 
 
 class TransferLotTestCase(unittest.TestCase):
@@ -1930,6 +1990,31 @@ class TradesOrderTestCase(unittest.TestCase):
         self.assertEqual(instance.isAPIOrder, None)
         self.assertEqual(instance.accruedInt, decimal.Decimal("0"))
 
+
+class OrderLITTestCase(unittest.TestCase):
+    """Test that LIT (Limit if Touched) order type is parsed correctly."""
+
+    data = ET.fromstring(
+    '<Order buySell="BUY" quantity="10" netCash="-500.0" dateTime="2025-01-15 09:30:00" tradePrice="50.0" '
+    'acctAlias="myaccount" assetCategory="STK" description="AAPL" conid="265598" '
+    'underlyingConid="" underlyingSymbol="" multiplier="1" strike="" expiry="" '
+    'putCall="" ibCommission="-1.0" ibOrderID="123456789" accountId="myaccount" model="" '
+    'currency="USD" fxRateToBase="1" symbol="AAPL" securityID="" securityIDType="" cusip="" '
+    'isin="" listingExchange="NASDAQ" underlyingSecurityID="" underlyingListingExchange="" issuer="" '
+    'tradeID="" reportDate="2025-01-15" principalAdjustFactor="" tradeDate="2025-01-15" settleDateTarget="2025-01-17" '
+    'transactionType="" exchange="" tradeMoney="500" proceeds="-500" taxes="0" ibCommissionCurrency="USD" closePrice="50.5" '
+    'openCloseIndicator="-" notes="" cost="501.0" fifoPnlRealized="0" fxPnl="0" mtmPnl="5" origTradePrice="" '
+    'origTradeDate="" origTradeID="" origOrderID="" clearingFirmID="" transactionID="" ibExecID="" brokerageOrderID="" '
+    'orderReference="" volatilityOrderLink="" exchOrderId="" extExecID="" orderTime="2025-01-15 09:30:00" openDateTime="" '
+    'holdingPeriodDateTime="" whenRealized="" whenReopened="" levelOfDetail="ORDER" changeInPrice="" changeInQuantity="" '
+    'orderType="LIT" traderID="" isAPIOrder="" accruedInt="0" />')
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Order)
+        self.assertEqual(instance.orderType, enums.OrderType.LIT)
+
+
 class OptionEAEBuyTestCase(unittest.TestCase):
     data = ET.fromstring(
         '<OptionEAE accountId="U123456" acctAlias="ibflex testing" model="" '
@@ -1981,6 +2066,42 @@ class OptionEAEBuyTestCase(unittest.TestCase):
         self.assertEqual(instance.fxPnl, decimal.Decimal("0.00"))
         self.assertEqual(instance.mtmPnl, decimal.Decimal("-118.00"))
         self.assertEqual(instance.tradeID, None)
+
+
+class TradeInitialInvestmentTestCase(unittest.TestCase):
+    """Trade.initialInvestment is parsed as Optional[bool] with Yes/No values."""
+    data = ET.fromstring(
+        '<Trade accountId="U123456" currency="USD" assetCategory="STK" '
+         'symbol="TEST" initialInvestment="Yes" quantity="100" />'
+    )
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.Trade)
+        self.assertEqual(instance.accountId, "U123456")
+        self.assertEqual(instance.currency, "USD")
+        self.assertEqual(instance.assetCategory, enums.AssetClass.STOCK)
+        self.assertEqual(instance.symbol, "TEST")
+        self.assertEqual(instance.initialInvestment, True)
+        self.assertEqual(instance.quantity, decimal.Decimal("100"))
+
+
+class EquitySummaryLiteSurchargeAccrualsTestCase(unittest.TestCase):
+    """EquitySummaryByReportDateInBase parses the liteSurchargeAccruals field."""
+    data = ET.fromstring(
+        '<EquitySummaryByReportDateInBase accountId="U123456" '
+         'reportDate="2024-01-01" cash="1000.00" total="1000.00" '
+         'liteSurchargeAccruals="5.50" />'
+    )
+
+    def testParse(self):
+        instance = parser.parse_data_element(self.data)
+        self.assertIsInstance(instance, Types.EquitySummaryByReportDateInBase)
+        self.assertEqual(instance.accountId, "U123456")
+        self.assertEqual(instance.reportDate, datetime.date(2024, 1, 1))
+        self.assertEqual(instance.cash, decimal.Decimal("1000.00"))
+        self.assertEqual(instance.total, decimal.Decimal("1000.00"))
+        self.assertEqual(instance.liteSurchargeAccruals, decimal.Decimal("5.50"))
 
 
 if __name__ == '__main__':
