@@ -1,0 +1,22 @@
+<FlexQueryResponse queryName="activity_basic" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U123456" fromDate="2025-01-01" toDate="2025-01-31" period="LastMonth" whenGenerated="2025-02-01;120000">
+<AccountInformation accountId="U123456" acctAlias="" model="" currency="USD" name="Test User" accountType="Individual" customerType="Individual" accountCapabilities="Margin" tradingPermissions="STK,OPT" registeredRepName="" registeredRepPhone="" dateOpened="2020-01-15" dateFunded="2020-02-01" dateClosed="" street="" street2="" city="" state="" country="" postalCode="" streetResidentialAddress="" street2ResidentialAddress="" cityResidentialAddress="" stateResidentialAddress="" countryResidentialAddress="" postalCodeResidentialAddress="" masterName="" ibEntity="IBLLC-US" primaryEmail="" accountRepName="" accountRepPhone="" />
+<Trades>
+<Trade accountId="U123456" acctAlias="" model="" currency="USD" fxRateToBase="1" assetCategory="STK" subCategory="" symbol="AAPL" description="APPLE INC" conid="265598" securityID="" securityIDType="" cusip="" isin="" listingExchange="NASDAQ" underlyingConid="" underlyingSymbol="" underlyingSecurityID="" underlyingListingExchange="" issuer="" multiplier="1" strike="" expiry="" putCall="" principalAdjustFactor="" reportDate="2025-01-15" tradeDate="2025-01-15" tradeTime="143000" settleDateTarget="2025-01-17" transactionType="ExchTrade" exchange="NASDAQ" quantity="100" tradePrice="150.00" tradeMoney="15000.00" proceeds="-15000.00" taxes="0" ibCommission="-1.00" ibCommissionCurrency="USD" netCash="-15001.00" closePrice="151.00" openCloseIndicator="O" notes="" cost="15001.00" fifoPnlRealized="0" mtmPnl="100.00" origTradePrice="0" origTradeDate="" origTradeID="" origOrderID="0" clearingFirmID="" transactionID="100001" buySell="BUY" ibOrderID="900001" ibExecID="exec1" brokerageOrderID="bro1" orderReference="" volatilityOrderLink="" exchOrderId="ex001" extExecID="" tradeID="1001" orderTime="2025-01-15;143000" changeInPrice="0" changeInQuantity="0" orderType="LMT" traderID="" isAPIOrder="N" accruedInt="0" />
+</Trades>
+<OpenPositions>
+<OpenPosition accountId="U123456" acctAlias="" model="" currency="USD" fxRateToBase="1" assetCategory="STK" subCategory="" symbol="AAPL" description="APPLE INC" conid="265598" securityID="" securityIDType="" cusip="" isin="" listingExchange="NASDAQ" underlyingConid="" underlyingSymbol="" underlyingSecurityID="" underlyingListingExchange="" issuer="" multiplier="1" strike="" expiry="" putCall="" principalAdjustFactor="" reportDate="2025-01-31" position="100" markPrice="155.00" positionValue="15500.00" openPrice="150.00" costBasisPrice="150.01" costBasisMoney="15001.00" percentOfNAV="" fifoPnlUnrealized="499.00" side="Long" levelOfDetail="LOT" openDateTime="2025-01-15;143000" holdingPeriodDateTime="2025-01-15;143000" code="" originatingOrderID="900001" originatingTransactionID="100001" accruedInt="0" />
+</OpenPositions>
+<CashTransactions>
+<CashTransaction accountId="U123456" acctAlias="" model="" currency="USD" fxRateToBase="1" assetCategory="" subCategory="" symbol="" description="ELECTRONIC FUND TRANSFER" conid="" securityID="" securityIDType="" cusip="" isin="" listingExchange="" underlyingConid="" underlyingSymbol="" underlyingSecurityID="" underlyingListingExchange="" issuer="" multiplier="" strike="" expiry="" putCall="" principalAdjustFactor="" dateTime="2025-01-02;090000" settleDate="2025-01-02" amount="10000.00" type="Deposits &amp; Withdrawals" tradeID="" code="" transactionID="200001" reportDate="2025-01-02" clientReference="" actionID="ACT001" levelOfDetail="DETAIL" />
+</CashTransactions>
+<ConversionRates>
+<ConversionRate reportDate="2025-01-31" fromCurrency="USD" toCurrency="USD" rate="1" />
+</ConversionRates>
+<SecuritiesInfo>
+<SecurityInfo assetCategory="STK" subCategory="" symbol="AAPL" description="APPLE INC" conid="265598" securityID="" cusip="" isin="" listingExchange="NASDAQ" underlyingSecurityID="" underlyingListingExchange="" underlyingConid="" underlyingCategory="" multiplier="1" strike="" expiry="" putCall="" principalAdjustFactor="1" maturity="" issueDate="" type="" sedol="" securityIDType="" underlyingSymbol="" issuer="" code="" />
+</SecuritiesInfo>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

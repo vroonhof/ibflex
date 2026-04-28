@@ -1,4 +1,3 @@
-# coding: utf-8
 """Parser/type converter for data in Interactive Brokers' Flex XML format.
 
 https://www.interactivebrokers.com/en/software/reportguide/reportguide.htm
@@ -7,12 +6,15 @@ Flex report configuration needed by this module:
     Date format: choose yyyy-MM-dd
     Trades: uncheck "Symbol Summary", "Asset Class", "Orders"
 """
-import xml.etree.ElementTree as ET
+import contextlib
 import datetime
 import decimal
-import itertools
 import functools
-from typing import Tuple, Union, Optional, Any, Callable, Iterable, cast
+import itertools
+from typing import Any, Callable, Iterable, Iterator, Optional, Tuple, Type, Union, cast
+from xml.etree.ElementTree import Element
+
+import defusedxml.ElementTree as ET
 
 from ibflex import Types, enums, utils
 
@@ -60,15 +62,44 @@ def disable_unknown_attribute_tolerance():
     _UNKNOWN_ATTRIBUTE_TOLERANCE = False
 
 
-def _get_known_attributes(Class):
-    """Get all known attribute names for a FlexElement subclass,
-    including inherited attributes from base classes.
+@contextlib.contextmanager
+def unknown_attribute_tolerance(enabled: bool = True) -> Iterator[None]:
+    """Scope-limited counterpart to enable/disable_unknown_attribute_tolerance().
+
+    Useful when you need tolerance for one parse() call without leaking the
+    setting to the rest of the process. Saves and restores the previous flag
+    value so this can be nested or used alongside the bare on/off helpers.
+
+    Note: still relies on the same module-global flag, so it is *not*
+    thread-safe. Two threads running this context manager concurrently with
+    different `enabled` arguments will see interleaved behavior.
+
+    Example::
+
+        with parser.unknown_attribute_tolerance():
+            response = parser.parse(xml)
     """
-    attrs = set()
-    for klass in Class.__mro__:
+    global _UNKNOWN_ATTRIBUTE_TOLERANCE
+    previous = _UNKNOWN_ATTRIBUTE_TOLERANCE
+    _UNKNOWN_ATTRIBUTE_TOLERANCE = enabled
+    try:
+        yield
+    finally:
+        _UNKNOWN_ATTRIBUTE_TOLERANCE = previous
+
+
+@functools.cache
+def _get_known_attributes(cls: type) -> frozenset:
+    """Return all attribute names for a FlexElement subclass, walking the MRO.
+
+    Cached because it's called once per data element when tolerance is on,
+    and the set of known attributes per class is fixed at module load time.
+    """
+    attrs: set = set()
+    for klass in cls.__mro__:
         if hasattr(klass, '__annotations__'):
             attrs.update(klass.__annotations__.keys())
-    return attrs
+    return frozenset(attrs)
 
 
 DataType = Union[
@@ -88,17 +119,18 @@ def parse(source) -> Types.FlexQueryResponse:
 
     Args:
         source: file name, file object, or bytes.
-    """
-    tree = ET.ElementTree()
 
+    Uses defusedxml to guard against XXE / billion-laughs / external-entity
+    attacks in untrusted Flex statement XML.
+    """
     #  Accept output of client.download(), which is bytes.
     if isinstance(source, bytes):
-        root = ET.XML(source)
+        root: Optional[Element] = ET.fromstring(source)
     #  Accept file name or file object.
     else:
-        root = tree.parse(source)
+        root = ET.parse(source).getroot()
 
-    if root.tag != "FlexQueryResponse":
+    if root is None or root.tag != "FlexQueryResponse":
         raise FlexParserError("Not a FlexQueryResponse")
     parsed = parse_element(root)
     assert isinstance(parsed, Types.FlexQueryResponse)
@@ -106,7 +138,7 @@ def parse(source) -> Types.FlexQueryResponse:
 
 
 def parse_element(
-    elem: ET.Element
+    elem: Element
 ) -> Optional[Union[Types.FlexElement, Tuple[Types.FlexElement, ...]]]:
     """Distinguish XML data element from container element; dispatch accordingly.
 
@@ -135,7 +167,7 @@ def parse_element(
     return parse_data_element(elem)
 
 
-def parse_element_container(elem: ET.Element) -> Tuple[Types.FlexElement, ...]:
+def parse_element_container(elem: Element) -> Tuple[Types.FlexElement, ...]:
     """Parse XML element container into FlexElement subclass instances.
     """
     tag = elem.tag
@@ -150,12 +182,12 @@ def parse_element_container(elem: ET.Element) -> Tuple[Types.FlexElement, ...]:
 
     instances = tuple(parse_data_element(child) for child in elem)
     if _UNKNOWN_ATTRIBUTE_TOLERANCE:
-        instances = cast(Tuple[Types.FlexElement, ...], tuple(inst for inst in instances if inst is not None))
+        instances = tuple(inst for inst in instances if inst is not None)
     return cast(Tuple[Types.FlexElement, ...], instances)
 
 
 def parse_data_element(
-    elem: ET.Element
+    elem: Element
 ) -> Optional[Types.FlexElement]:
     """Parse an XML data element into a Types.FlexElement subclass instance.
 
@@ -209,7 +241,7 @@ def parse_data_element(
 
 
 def parse_element_attr(
-    Class: Types.FlexElement, name: str, value: str
+    Class: Type[Types.FlexElement], name: str, value: str
 ) -> Tuple[str, Any]:
     """Convert an XML element attribute into its corresponding Python type,
     based on the FlexElement subclass attribute type hint.
@@ -234,10 +266,10 @@ def parse_element_attr(
         converted = ATTRIB_CONVERTERS[Type](value=value)
         return name, converted
     except KeyError as exc:
-        msg = f"{Class.__name__}.{name} - Don't know how to convert "  # type: ignore
+        msg = f"{Class.__name__}.{name} - Don't know how to convert "
         raise FlexParserError(msg + str(exc))
     except Exception as exc:
-        msg = f"{Class.__name__}.{name} - " + str(exc)  # type: ignore
+        msg = f"{Class.__name__}.{name} - " + str(exc)
         raise FlexParserError(msg)
 
 
@@ -323,17 +355,6 @@ def prep_datetime(value: str) -> Optional[Tuple[int, ...]]:
 
     # Multiple date/time separators appear in input value.
     raise FlexParserError(f"Bad date/time format: {value}")
-
-    sep = seps[0]
-
-    try:
-        #  HACK - some old data has ", " separator, which shows up as
-        #  seps = [",", ""].  Keep the comma, strip the space.
-        datestr, timestr = value.split(sep)
-        timestr = timestr.strip()
-        return merge_date_time(datestr, timestr)
-    except Exception:
-        raise FlexParserError(f"Bad date/time format: {value}")
 
 
 def prep_sequence(value: str) -> Iterable[str]:

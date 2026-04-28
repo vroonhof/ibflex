@@ -1,0 +1,9 @@
+<FlexQueryResponse queryName="stock_grant" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U123456" fromDate="2025-06-01" toDate="2025-06-30" period="LastMonth" whenGenerated="2025-07-01;120000">
+<StockGrantActivities>
+<StockGrantActivity accountId="U123456" acctAlias="" model="" currency="USD" fxRateToBase="0.73459" assetCategory="STK" subCategory="COMMON" symbol="IBKR" description="INTERACTIVE BROKERS GRO-CL A" conid="43645865" securityID="US45841N1072" securityIDType="ISIN" cusip="45841N107" isin="US45841N1072" figi="BBG000LV0836" listingExchange="NASDAQ" underlyingConid="" underlyingSymbol="IBKR" underlyingSecurityID="" underlyingListingExchange="" issuer="" issuerCountryCode="US" multiplier="1" strike="" expiry="" putCall="" principalAdjustFactor="" reportDate="2025-06-12" activityDescription="Stock Award Grant for Cash Deposit" awardDate="2025-06-12" vestingDate="2026-06-12" quantity="2.6454" price="204.51" value="541.01" serialNumber="" deliveryType="" commodityType="" fineness="0.0" weight="0.0" />
+</StockGrantActivities>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

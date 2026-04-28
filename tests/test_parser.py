@@ -1,20 +1,19 @@
-# coding: utf-8
 """ Unit tests for ibflex.parser module """
 
 # PEP 563 compliance
 # https://www.python.org/dev/peps/pep-0563/#resolving-type-hints-at-runtime
 from __future__ import annotations
 
-import unittest
-from unittest.mock import patch, sentinel
-import xml.etree.ElementTree as ET
 import datetime
 import decimal
 import enum
-from typing import Tuple, Optional
 import functools
+import unittest
+import xml.etree.ElementTree as ET
+from typing import Optional, Tuple
+from unittest.mock import patch, sentinel
 
-from ibflex import parser, Types, enums
+from ibflex import Types, enums, parser
 
 
 @patch("ibflex.parser.parse_element_container")
@@ -376,6 +375,10 @@ class ConverterFunctionTestCase(unittest.TestCase):
         with self.assertRaises(parser.FlexParserError):
             parser.convert_date("")
 
+        #  IBKR sends "MULTI" for summary rows that span multiple dates.
+        self.assertIsNone(parser.prep_date("MULTI"))
+        self.assertIsNone(parser.prep_datetime("MULTI"))
+
     def testConvertTime(self):
         """Legal time formats: HHmmss, HH:mm:ss"""
         for string in (
@@ -625,7 +628,6 @@ class UnknownAttributeToleranceTestCase(unittest.TestCase):
         self.assertEqual(instance.acctAlias, "test")
         self.assertEqual(instance.currency, "USD")
         self.assertEqual(instance.name, "Test User")
-        import datetime
         self.assertEqual(instance.dateOpened, datetime.date(2020, 1, 15))
 
     def test_disable_restores_strict_behavior(self):
@@ -755,6 +757,31 @@ class UnknownAttributeToleranceTestCase(unittest.TestCase):
         self.assertEqual(len(response.FlexStatements), 1)
         self.assertEqual(response.FlexStatements[0].accountId, "U123456")
 
+    def test_context_manager_enables_and_restores(self):
+        """`with unknown_attribute_tolerance()` flips the flag and restores it."""
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        with parser.unknown_attribute_tolerance():
+            self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+
+    def test_context_manager_restores_on_exception(self):
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        with self.assertRaises(RuntimeError):
+            with parser.unknown_attribute_tolerance():
+                self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+                raise RuntimeError("boom")
+        self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+
+    def test_context_manager_disable_restores_previous(self):
+        """Nesting with enabled=False inside an enabled scope restores the outer."""
+        parser.enable_unknown_attribute_tolerance()
+        try:
+            with parser.unknown_attribute_tolerance(enabled=False):
+                self.assertFalse(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+            self.assertTrue(parser._UNKNOWN_ATTRIBUTE_TOLERANCE)
+        finally:
+            parser.disable_unknown_attribute_tolerance()
+
     def test_multiple_unknown_attrs_on_trade(self):
         """Unknown attributes on Trade elements are ignored with tolerance."""
         parser.enable_unknown_attribute_tolerance()
@@ -774,6 +801,75 @@ class UnknownAttributeToleranceTestCase(unittest.TestCase):
         self.assertEqual(instance.symbol, "AAPL")
         self.assertEqual(instance.tradeID, "123")
         self.assertFalse(hasattr(instance, 'newField1'))
+
+
+class ParserErrorBranchesTestCase(unittest.TestCase):
+    """Coverage for the parser's various FlexParserError raise paths."""
+
+    def test_wrong_root_tag_raises(self):
+        """parse() rejects XML whose root isn't <FlexQueryResponse>."""
+        with self.assertRaises(parser.FlexParserError) as cm:
+            parser.parse(b'<NotAFlexQueryResponse />')
+        self.assertIn("Not a FlexQueryResponse", str(cm.exception))
+
+    def test_dataclass_construction_failure_raises(self):
+        """If a dataclass __init__ blows up, parse_data_element wraps it."""
+        # FlexQueryResponse requires queryName and type — omit both.
+        elem = ET.fromstring('<FlexQueryResponse />')
+        # parse_element returns the container path because attrib is empty;
+        # bypass to parse_data_element directly to hit the error wrapping.
+        elem = ET.fromstring('<FlexQueryResponse queryName="ok" />')
+        with self.assertRaises(parser.FlexParserError) as cm:
+            parser.parse_data_element(elem)
+        self.assertIn("FlexQueryResponse - ", str(cm.exception))
+
+    def test_unknown_converter_type_raises(self):
+        """parse_element_attr raises when the annotation has no converter."""
+        # Temporarily inject an annotation pointing at an un-registered type
+        # string. Restore in a finally block so the rest of the suite is clean.
+        original = Types.AccountInformation.__annotations__.get("accountId")
+        try:
+            Types.AccountInformation.__annotations__["accountId"] = (
+                "UnregisteredType"
+            )
+            with self.assertRaises(parser.FlexParserError) as cm:
+                parser.parse_element_attr(
+                    Types.AccountInformation, "accountId", "x"
+                )
+            self.assertIn("Don't know how to convert", str(cm.exception))
+        finally:
+            Types.AccountInformation.__annotations__["accountId"] = original
+
+
+class NullPrepResultTestCase(unittest.TestCase):
+    """make_converter preserves None when prep returns None."""
+
+    def test_convert_date_multi_returns_none(self):
+        """convert_date('MULTI') exercises the make_converter null branch."""
+        self.assertIsNone(parser.convert_date("MULTI"))
+
+    def test_convert_datetime_multi_returns_none(self):
+        self.assertIsNone(parser.convert_datetime("MULTI"))
+
+
+class CliMainTestCase(unittest.TestCase):
+    """The parser CLI entrypoint reads files and prints success."""
+
+    def test_main_prints_success(self):
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False) as f:
+            f.write(
+                '<FlexQueryResponse queryName="t" type="AF">'
+                '<FlexStatements count="0" /></FlexQueryResponse>'
+            )
+            f.flush()
+            path = f.name
+
+        with patch("sys.argv", ["parser", path]), patch("builtins.print") as mp:
+            parser.main()
+        mp.assert_called_once()
+        self.assertIn("Successfully parsed", mp.call_args.args[0])
 
 
 if __name__ == '__main__':

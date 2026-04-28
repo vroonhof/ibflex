@@ -1,9 +1,10 @@
+"""Round-trip parser tests for newer EquitySummaryByReportDateInBase fields."""
+import decimal
 import unittest
-from ibflex import parser
 
-class TestEquitySummaryNewFields(unittest.TestCase):
-    def test_new_fields_parsing(self):
-        xml_data = b"""
+from ibflex import Types, parser
+
+XML = b"""\
 <FlexQueryResponse queryName="Test" type="AF">
     <FlexStatements count="1">
         <FlexStatement accountId="U12345" fromDate="20230101" toDate="20230131" period="LastMonth" whenGenerated="20230201;120000">
@@ -14,22 +15,26 @@ class TestEquitySummaryNewFields(unittest.TestCase):
     </FlexStatements>
 </FlexQueryResponse>
 """
-        try:
-            response = parser.parse(xml_data)
-            self.assertIsInstance(response, parser.Types.FlexQueryResponse)
 
-            equity_summary = response.FlexStatements[0].EquitySummaryInBase[0]
 
-            # Check the new fields
-            self.assertEqual(equity_summary.liteSurchargeAccrualsLong, 0)
-            self.assertEqual(equity_summary.liteSurchargeAccrualsShort, 0)
-            self.assertEqual(equity_summary.cgtWithholdingAccruals, 0)
-            self.assertEqual(equity_summary.cgtWithholdingAccrualsLong, 0)
-            self.assertEqual(equity_summary.cgtWithholdingAccrualsShort, 0)
+class TestEquitySummaryNewFields(unittest.TestCase):
+    def test_new_fields_parsing(self):
+        response = parser.parse(XML)
+        self.assertIsInstance(response, Types.FlexQueryResponse)
 
-            print("\nSuccessfully parsed XML data and verified new fields")
-        except parser.FlexParserError as e:
-            self.fail(f"FlexParserError raised: {e}")
+        equity_summary = response.FlexStatements[0].EquitySummaryInBase[0]
+        zero = decimal.Decimal("0")
 
-if __name__ == '__main__':
+        for attr in (
+            "liteSurchargeAccruals",
+            "liteSurchargeAccrualsLong",
+            "liteSurchargeAccrualsShort",
+            "cgtWithholdingAccruals",
+            "cgtWithholdingAccrualsLong",
+            "cgtWithholdingAccrualsShort",
+        ):
+            self.assertEqual(getattr(equity_summary, attr), zero)
+
+
+if __name__ == "__main__":
     unittest.main()

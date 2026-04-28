@@ -1,0 +1,9 @@
+<FlexQueryResponse queryName="legacy_separator" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U123456" fromDate="2017-01-01" toDate="2017-01-31" period="LastMonth" whenGenerated="2017-02-01, 120000">
+<CashTransactions>
+<CashTransaction accountId="U123456" acctAlias="" model="" currency="USD" fxRateToBase="1" assetCategory="" subCategory="" symbol="" description="LEGACY DEPOSIT" conid="" securityID="" securityIDType="" cusip="" isin="" listingExchange="" underlyingConid="" underlyingSymbol="" underlyingSecurityID="" underlyingListingExchange="" issuer="" multiplier="" strike="" expiry="" putCall="" principalAdjustFactor="" dateTime="2017-01-02, 090000" settleDate="2017-01-02" amount="5000.00" type="Deposits &amp; Withdrawals" tradeID="" code="" transactionID="300001" reportDate="2017-01-02" clientReference="" actionID="ACT001" levelOfDetail="DETAIL" />
+</CashTransactions>
+</FlexStatement>
+</FlexStatements>
+</FlexQueryResponse>

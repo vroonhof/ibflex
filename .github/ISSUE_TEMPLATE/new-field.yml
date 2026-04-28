@@ -1,0 +1,50 @@
+name: New IBKR field needed
+description: IBKR added an attribute that ibflex2 doesn't know about yet.
+labels: [new-field, schema]
+body:
+  - type: input
+    id: section
+    attributes:
+      label: Flex section
+      description: Which IBKR Flex Query section / dataclass?
+      placeholder: e.g. Trade, OpenPosition, CashTransaction
+    validations:
+      required: true
+
+  - type: input
+    id: field
+    attributes:
+      label: New field name
+      placeholder: e.g. brandNewIBKRAttr
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Suggested Python type
+      options:
+        - "Optional[str]"
+        - "Optional[int]"
+        - "Optional[bool]"
+        - "Optional[decimal.Decimal]"
+        - "Optional[datetime.date]"
+        - "Optional[datetime.datetime]"
+        - "Optional[enums.SomeEnum]"
+        - "Other (explain below)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example XML attribute value
+      placeholder: e.g. brandNewIBKRAttr="ABCDEF"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Any link to the IBKR Flex Query Reference, screenshots, etc.

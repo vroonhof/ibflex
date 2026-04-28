@@ -1,0 +1,5 @@
+<FlexQueryResponse queryName="minimal" type="AF">
+<FlexStatements count="1">
+<FlexStatement accountId="U123456" fromDate="2025-01-01" toDate="2025-01-31" period="LastMonth" whenGenerated="2025-02-01;120000" />
+</FlexStatements>
+</FlexQueryResponse>

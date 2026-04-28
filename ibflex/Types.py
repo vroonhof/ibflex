@@ -1,4 +1,3 @@
-# coding: utf-8
 """Python data types for IB Flex format XML data.
 
 These class definitions are introspected by ibflex.parser to type-convert
@@ -34,69 +33,71 @@ TODO - need types for:
     ComplexPositions
     HKIPOSubscriptionActivity
     PendingExcercises
-    FxTransactions
     UnbookedTrades
     RoutingCommissions
     IBGNoteTransactions
     Adjustments
     SoftDollars
-    CFDCharges
-    SLBOpenContracts
     HKIPOOpenSubscriptions
+    CommissionCredits
+    SLBCollaterals
+    IncentiveCouponAccrualDetails
+    DepositsOnHold
 """
 # PEP 563 compliance
 # https://www.python.org/dev/peps/pep-0563/#resolving-type-hints-at-runtime
 from __future__ import annotations
 
 __all__ = [
+    "AccountInformation",
+    "AssetSummary",
+    "CFDCharge",
+    "CashReportCurrency",
+    "CashTransaction",
+    "ChangeInDividendAccrual",
+    "ChangeInNAV",
+    "ChangeInPositionValue",
+    "ClientFee",
+    "ClientFeesDetail",
+    "ConversionRate",
+    "CorporateAction",
+    "DebitCardActivity",
+    "EquitySummaryByReportDateInBase",
+    "FIFOPerformanceSummaryUnderlying",
     "FlexElement",
     "FlexQueryResponse",
     "FlexStatement",
-    "AccountInformation",
-    "ChangeInNAV",
-    "MTMPerformanceSummaryUnderlying",
-    "EquitySummaryByReportDateInBase",
-    "MTDYTDPerformanceSummaryUnderlying",
-    "CashReportCurrency",
-    "FIFOPerformanceSummaryUnderlying",
-    "NetStockPosition",
-    "UnsettledTransfer",
-    "UnbundledCommissionDetail",
-    "StatementOfFundsLine",
-    "ChangeInPositionValue",
-    "OpenPosition",
     "FxLot",
-    "Trade",
-    "TradeConfirm",
-    "OptionEAE",
-    "TradeTransfer",
-    "TierInterestDetail",
+    "FxTransaction",
     "HardToBorrowDetail",
     "InterestAccrualsCurrency",
-    "SLBActivity",
-    "Transfer",
-    "CorporateAction",
-    "FxTransaction",
-    "CashTransaction",
-    "ChangeInDividendAccrual",
+    "MTDYTDPerformanceSummaryUnderlying",
+    "MTMPerformanceSummaryUnderlying",
+    "NetStockPosition",
     "OpenDividendAccrual",
-    "SecurityInfo",
-    "ConversionRate",
-    "PriorPeriodPosition",
-    "ClientFee",
-    "ClientFeesDetail",
-    "SalesTax",
-    "DebitCardActivity",
-    "SymbolSummary",
-    "AssetSummary",
+    "OpenPosition",
+    "OptionEAE",
     "Order",
+    "PriorPeriodPosition",
+    "SLBActivity",
+    "SalesTax",
+    "SecurityInfo",
+    "StatementOfFundsLine",
     "StockGrantActivity",
+    "SymbolSummary",
+    "TierInterestDetail",
+    "Trade",
+    "TradeConfirm",
+    "TradeTransfer",
+    "Transfer",
+    "UnbundledCommissionDetail",
+    "UnsettledTransfer",
 ]
 
 import datetime
 import decimal
 from dataclasses import dataclass
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from ibflex import enums
 
@@ -116,15 +117,14 @@ class FlexQueryResponse(FlexElement):
     Message: Optional[str] = None
 
     def __repr__(self):
-        repr = (
+        return (
             f"{type(self).__name__}("
             f"queryName={self.queryName!r}, "
             f"type={self.type!r}, "
-            f"len(FlexStatements)={len(self.FlexStatements)}"
+            f"len(FlexStatements)={len(self.FlexStatements)}, "
             f"Message={self.Message!r}"
             ")"
         )
-        return repr
 
 
 @dataclass(frozen=True)
@@ -173,7 +173,7 @@ class FlexStatement(FlexElement):
     SoftDollars: Tuple = ()  # TODO
     CashTransactions: Tuple["CashTransaction", ...] = ()
     SalesTaxes: Tuple["SalesTax", ...] = ()
-    CFDCharges: Tuple = ()  # TODO
+    CFDCharges: Tuple["CFDCharge", ...] = ()
     InterestAccruals: Tuple["InterestAccrualsCurrency", ...] = ()
     TierInterestDetails: Tuple["TierInterestDetail", ...] = ()
     HardToBorrowDetails: Tuple["HardToBorrowDetail", ...] = ()
@@ -194,29 +194,18 @@ class FlexStatement(FlexElement):
     DepositsOnHold: Tuple = ()  # TODO
 
     def __repr__(self):
-        repr = (
-            f"{type(self).__name__}("
-            f"accountId={self.accountId!r}, "
-            f"fromDate={self.fromDate!r}, "
-            f"toDate={self.toDate!r}, "
-            f"period={self.period!r}, "
-            f"whenGenerated={self.whenGenerated!r}"
-        )
-
-        sequences = (
-            (k, getattr(self, k))
-            for k, v in self.__annotations__.items()
-            if hasattr(v, "__origin__") and v.__origin__ is tuple
-        )
-        nonempty_sequences = ", ".join(
-            f"len({name})={len(value)}" for (name, value) in sequences if value
-        )
-        if nonempty_sequences:
-            repr += ", "
-            for seq in nonempty_sequences:
-                repr += seq
-        repr += ")"
-        return repr
+        parts = [
+            f"accountId={self.accountId!r}",
+            f"fromDate={self.fromDate!r}",
+            f"toDate={self.toDate!r}",
+            f"period={self.period!r}",
+            f"whenGenerated={self.whenGenerated!r}",
+        ]
+        for name in self.__annotations__:
+            value = getattr(self, name, None)
+            if isinstance(value, tuple) and value:
+                parts.append(f"len({name})={len(value)}")
+        return f"{type(self).__name__}({', '.join(parts)})"
 
 
 @dataclass(frozen=True)
@@ -1416,7 +1405,7 @@ class SymbolSummary(FlexElement):
     settleDateTarget: Optional[datetime.date] = None        # expected date of ownership transfer
     taxes: Optional[decimal.Decimal] = None
     tradeDate: Optional[datetime.date] = None
-    tradePrice: Optional[decimal.Decimal] = None    
+    tradePrice: Optional[decimal.Decimal] = None
     tradeMoney: Optional[decimal.Decimal] = None            # TradeMoney = Proceeds + Fees + Commissions
     exchange: Optional[str] = None
     buySell: Optional[enums.BuySell] = None
@@ -2299,8 +2288,7 @@ class CorporateAction(FlexElement):
     figi: Optional[str] = None
     issuerCountryCode: Optional[str] = None
     costBasis: Optional[decimal.Decimal] = None
-    
-
+    realizedPL: Optional[decimal.Decimal] = None
 
 
 @dataclass(frozen=True)
@@ -2747,6 +2735,16 @@ class TransactionTax(FlexElement):
     source: Optional[str] = None
     code: Tuple[enums.Code, ...] = ()
     levelOfDetail: Optional[str] = None
+    subCategory: Optional[str] = None
+    figi: Optional[str] = None
+    issuerCountryCode: Optional[str] = None
+    settleDate: Optional[datetime.date] = None
+    orderId: Optional[str] = None
+    serialNumber: Optional[str] = None
+    deliveryType: Optional[str] = None
+    commodityType: Optional[str] = None
+    fineness: Optional[decimal.Decimal] = None
+    weight: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -2879,6 +2877,8 @@ class SLBOpenContract(FlexElement):
 
 @dataclass(frozen=True)
 class StockGrantActivity(FlexElement):
+    """Wrapped in <StockGrantActivities>"""
+
     accountId: Optional[str] = None
     acctAlias: Optional[str] = None
     model: Optional[str] = None
