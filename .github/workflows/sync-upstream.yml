@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   sync:
+    # Disabled due to repeated merge-conflict failures in automation; run manually if needed.
     if: false
     runs-on: ubuntu-latest
     steps:
