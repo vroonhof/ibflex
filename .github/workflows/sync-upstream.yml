@@ -3,8 +3,14 @@ name: Sync from upstream
 on:
   schedule: on: {}  # Disabled
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   sync:
+    # Disabled due to repeated merge-conflict failures in automation; run manually if needed.
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
