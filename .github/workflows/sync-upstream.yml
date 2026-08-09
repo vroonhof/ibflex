@@ -1,9 +1,7 @@
 name: Sync from upstream
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Nightly at midnight UTC
-  workflow_dispatch:  # Allow manual trigger
+  schedule: on: {}  # Disabled
 
 jobs:
   sync:
